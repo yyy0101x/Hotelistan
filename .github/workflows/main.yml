@@ -17,8 +17,3 @@ jobs:
 
       - name: Build Project
         run: npm run build
-
-      - name: Deploy to Firebase
-        # This step will fail at first because we haven't linked Firebase keys yet.
-        # THIS IS PERFECT for your "Failed Run" screenshot!
-        run: npx firebase-tools deploy --token ${{ secrets.FIREBASE_TOKEN }}

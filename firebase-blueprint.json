@@ -1,0 +1,93 @@
+{
+  "entities": {
+    "Room": {
+      "title": "Room",
+      "description": "Represents a hotel room and its current status.",
+      "type": "object",
+      "properties": {
+        "roomNumber": { "type": "string", "description": "The unique number of the room." },
+        "type": { "type": "string", "description": "The type of room (e.g., Single, Double, Suite)." },
+        "status": { "type": "string", "enum": ["Available", "Occupied", "Dirty", "Ready"], "description": "Current status of the room." },
+        "isClean": { "type": "boolean", "description": "Whether the room is currently clean." },
+        "dnd": { "type": "boolean", "description": "Do Not Disturb status." },
+        "urgentCleaning": { "type": "boolean", "description": "Whether urgent cleaning is requested." },
+        "lastCleaned": { "type": "string", "format": "date-time", "description": "When the room was last cleaned." },
+        "basePrice": { "type": "number", "description": "Base price per night." },
+        "maxAdults": { "type": "number", "description": "Maximum number of adults." },
+        "maxChildren": { "type": "number", "description": "Maximum number of children." },
+        "extraBedAllowed": { "type": "boolean", "description": "If an extra bed is allowed." },
+        "extraBedFee": { "type": "number", "description": "Fee for an extra bed." }
+      },
+      "required": ["roomNumber", "type", "status", "isClean"]
+    },
+    "Booking": {
+      "title": "Booking",
+      "description": "Represents a guest reservation.",
+      "type": "object",
+      "properties": {
+        "guestName": { "type": "string", "description": "Name of the guest." },
+        "roomNumber": { "type": "string", "description": "The room number assigned." },
+        "checkInDate": { "type": "string", "format": "date-time", "description": "Check-in date." },
+        "checkOutDate": { "type": "string", "format": "date-time", "description": "Check-out date." },
+        "totalBill": { "type": "number", "description": "Total bill amount." },
+        "status": { "type": "string", "enum": ["Active", "Completed"], "description": "Status of the booking." },
+        "adults": { "type": "number", "description": "Number of adults." },
+        "children": { "type": "number", "description": "Number of children." },
+        "isHoneymoon": { "type": "boolean", "description": "If it's a honeymoon booking." },
+        "isElderly": { "type": "boolean", "description": "If guests are elderly." },
+        "hasExtraBed": { "type": "boolean", "description": "If extra bed requested." },
+        "packageFee": { "type": "number", "description": "Package add-on fee." },
+        "discount": { "type": "number", "description": "Discount applied." }
+      },
+      "required": ["guestName", "roomNumber", "checkInDate", "status"]
+    },
+    "Task": {
+      "title": "Task",
+      "description": "Operational tasks for staff.",
+      "type": "object",
+      "properties": {
+        "roomId": { "type": "string", "description": "ID of the room." },
+        "roomNumber": { "type": "string", "description": "Room number." },
+        "description": { "type": "string", "description": "Task description." },
+        "status": { "type": "string", "enum": ["Pending", "Completed"], "description": "Status of the task." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Task creation time." },
+        "type": { "type": "string", "enum": ["Cleaning", "Setup", "Maintenance"], "description": "Type of task." }
+      },
+      "required": ["roomId", "roomNumber", "description", "status", "type"]
+    },
+    "MissedTask": {
+      "title": "MissedTask",
+      "description": "Archived tasks that were not completed in time.",
+      "type": "object",
+      "properties": {
+        "roomId": { "type": "string", "description": "ID of the room." },
+        "roomNumber": { "type": "string", "description": "Room number." },
+        "description": { "type": "string", "description": "Task description." },
+        "status": { "type": "string", "description": "Status when archived." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Original creation time." },
+        "type": { "type": "string", "description": "Type of task." },
+        "archivedAt": { "type": "string", "format": "date-time", "description": "When the task was archived." },
+        "reason": { "type": "string", "description": "Reason for archiving." }
+      },
+      "required": ["roomId", "roomNumber", "description", "archivedAt"]
+    },
+    "User": {
+      "title": "User",
+      "description": "Represents a system user and their role.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Firebase Auth UID." },
+        "email": { "type": "string", "format": "email", "description": "User's email address." },
+        "role": { "type": "string", "enum": ["Receptionist", "Housekeeper", "Guest"], "description": "User's role in the system." }
+      },
+      "required": ["uid", "email", "role"]
+    }
+  },
+  "firestore": {
+    "/rooms/{roomNumber}": { "schema": "Room", "description": "Collection of hotel rooms." },
+    "/bookings/{bookingId}": { "schema": "Booking", "description": "Collection of guest bookings." },
+    "/users/{uid}": { "schema": "User", "description": "Collection of system users." },
+    "/tasks/{taskId}": { "schema": "Task", "description": "Collection of staff tasks." },
+    "/missed_tasks/{taskId}": { "schema": "MissedTask", "description": "Archived missed tasks." }
+  }
+}

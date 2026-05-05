@@ -1,0 +1,147 @@
+// ===============================================================
+// Assumed Data Model
+// ===============================================================
+//
+// Collection: users
+// Document ID: {uid}
+// Fields:
+//   - uid: string (required) - Firebase Auth UID
+//   - email: string (required) - User email
+//   - role: string (required, ['Receptionist', 'Housekeeper', 'Guest']) - User role
+//
+// Collection: rooms
+// Document ID: {roomNumber}
+// Fields:
+//   - roomNumber: string (required) - Room number
+//   - type: string (required) - Room type
+//   - status: string (required, ['Available', 'Occupied', 'Dirty', 'Ready']) - Current status
+//   - isClean: bool (required) - Whether the room is clean
+//   - dnd: bool (required) - Do Not Disturb status
+//   - urgentCleaning: bool (required) - Urgent cleaning request
+//   - lastCleaned: timestamp (optional) - Last cleaning time
+//   - assignedTo: string (optional) - UID of the assigned housekeeper
+//
+// Collection: bookings
+// Document ID: {bookingId}
+// Fields:
+//   - guestName: string (required) - Guest name
+//   - roomNumber: string (required) - Room number
+//   - checkInDate: timestamp (required) - Check-in date
+//   - checkOutDate: timestamp (optional) - Check-out date
+//   - totalBill: number (optional) - Total bill
+//   - status: string (required, ['Active', 'Completed']) - Booking status
+//   - guestUid: string (optional) - UID of the guest user
+//
+// Collection: tasks
+// Document ID: {taskId}
+// Fields:
+//   - roomId: string (required)
+//   - roomNumber: string (required)
+//   - description: string (required)
+//   - status: string (required, ['Pending', 'Completed'])
+//   - createdAt: timestamp (required)
+//   - type: string (required, ['Cleaning', 'Setup', 'Maintenance'])
+//
+// ===============================================================
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function hasRole(role) {
+      return isAuthenticated() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && getUserData().role == role;
+    }
+
+    function isReceptionist() {
+      return (request.auth.token.email == "roxiescrowzna@gmail.com" && request.auth.token.email_verified == true) || 
+             (isAuthenticated() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Receptionist');
+    }
+
+    function isHousekeeper() {
+      return hasRole('Housekeeper');
+    }
+
+    function isGuest() {
+      return hasRole('Guest');
+    }
+
+    function isValidEmail(email) {
+      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    function isValidRoom(data) {
+      return data.roomNumber is string && data.roomNumber.size() > 0 && data.roomNumber.size() < 10 &&
+             data.type is string && data.type.size() > 0 && data.type.size() < 50 &&
+             data.status in ['Available', 'Occupied', 'Dirty', 'Ready'] &&
+             data.isClean is bool &&
+             data.dnd is bool &&
+             data.urgentCleaning is bool &&
+             (!('assignedTo' in data) || data.assignedTo == null || data.assignedTo is string) &&
+             (!('accessCode' in data) || data.accessCode == null || (data.accessCode is string && data.accessCode.matches("^\\d{6}$"))) &&
+             (!('guestUid' in data) || data.guestUid == null || data.guestUid is string);
+    }
+
+    function isValidBooking(data) {
+      return data.guestName is string && data.guestName.size() > 0 && data.guestName.size() < 100 &&
+             data.roomNumber is string && data.roomNumber.size() > 0 && data.roomNumber.size() < 10 &&
+             data.checkInDate is timestamp &&
+             data.status in ['Active', 'Completed'];
+    }
+
+    function isValidUser(data) {
+      return data.uid is string && data.uid == request.auth.uid &&
+             data.email is string && isValidEmail(data.email) &&
+             data.role in ['Receptionist', 'Housekeeper', 'Guest'];
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /users/{uid} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+    }
+
+    match /rooms/{roomId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+    }
+
+    match /bookings/{bookingId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+    }
+
+    match /tasks/{taskId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+    }
+
+    match /missed_tasks/{taskId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated();
+      allow delete: if isAuthenticated();
+    }
+
+    match /test/connection {
+      allow read: if true;
+    }
+  }
+}

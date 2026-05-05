@@ -1,0 +1,5 @@
+{
+  "name": "Hotelistan",
+  "description": "A streamlined Hotel Management System for boutique hotels, focusing on real-time room tracking and seamless communication between reception and housekeeping.",
+  "requestFramePermissions": []
+}

@@ -990,6 +990,7 @@ export default function App() {
         }
       }
 
+      try{
       for (const t of tasksToCreate) {
         await addDoc(collection(db, 'tasks'), t);
       }

@@ -1,0 +1,7 @@
+services:
+  hotel-system:
+    build: .
+    ports:
+      - "8080:80"
+    environment:
+      - VITE_FIREBASE_API_KEY=${VITE_FIREBASE_API_KEY}

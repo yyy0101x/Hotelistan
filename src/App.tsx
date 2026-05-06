@@ -870,57 +870,83 @@ export default function App() {
     }
   };
 
-  const createBooking = async () => {
-    if (!newBooking.guestName || !newBooking.roomId) return;
+ const createBooking = async () => {
+  // 1. Basic field check
+  if (!newBooking.guestName || !newBooking.roomId) {
+    alert("Please fill in all required fields.");
+    return;
+  }
 
-    try {
-      const room = rooms.find(r => r.id === newBooking.roomId);
-      if (!room) return;
+  // 2. Find the room
+  const room = rooms.find(r => r.id === newBooking.roomId);
+  if (!room) {
+    alert("Room not found.");
+    return;
+  }
 
-      const code = Math.floor(100000 + Math.random() * 900000).toString();
-      const checkInDate = ensureDate(newBooking.checkInDate);
-      const checkOutDate = ensureDate(newBooking.checkOutDate);
-      const nights = Math.max(1, differenceInDays(checkOutDate, checkInDate));
-      
-      // PRICING CALCULATION
-      const basePrice = room.basePrice || 100;
-      
-      let extraBedFeeTotal = 0;
-      if (newBooking.hasExtraBed && room.extraBedAllowed) {
-        extraBedFeeTotal = (room.extraBedFee || 0);
-      }
+  // 3. CAPACITY VALIDATION (The Guard Clause)
+  const totalGuests = newBooking.adults + newBooking.children;
+  const maxCapacity = (room.maxAdults || 0) + (room.maxChildren || 0);
 
-      const packageFee = newBooking.isHoneymoon ? 30 : 0;
-      const subtotalPerNight = basePrice + extraBedFeeTotal + packageFee;
-      const subtotal = subtotalPerNight * nights;
-      
-      let discount = 0;
-      if (newBooking.isElderly) {
-        discount = subtotal * 0.10; // 10% discount
-      }
-      
-      const totalBill = subtotal - discount;
+  if (totalGuests > maxCapacity) {
+    alert(`Capacity Error: This room only holds ${maxCapacity} guests. You have ${totalGuests}.`);
+    return; // Stops execution here
+  }
+  if (totalGuests <= 0) {
+    alert("Please add at least one guest.");
+    return;
+  }
 
-      const bookingData = {
-        guestName: newBooking.guestName,
-        roomNumber: room.roomNumber,
-        checkInDate: Timestamp.fromDate(checkInDate),
-        checkOutDate: Timestamp.fromDate(checkOutDate),
-        status: 'Active',
-        totalBill: totalBill,
-        accessCode: code,
-        adults: newBooking.adults,
-        children: newBooking.children,
-        guests: newBooking.guests,
-        isHoneymoon: newBooking.isHoneymoon,
-        isElderly: newBooking.isElderly,
-        hasExtraBed: newBooking.hasExtraBed,
-        packageFee: packageFee,
-        discount: discount
-      };
+  // 4. PREPARE DATES & NIGHTS
+  const checkInDate = ensureDate(newBooking.checkInDate);
+  const checkOutDate = ensureDate(newBooking.checkOutDate);
+  const nights = Math.max(1, differenceInDays(checkOutDate, checkInDate));
+  const code = Math.floor(100000 + Math.random() * 900000).toString();
 
-      await addDoc(collection(db, 'bookings'), bookingData);
+  // 5. PRICING CALCULATION
+  const basePrice = room.basePrice || 100;
+  
+  // Fees
+  const extraBedFee = (newBooking.hasExtraBed && room.extraBedAllowed) ? (room.extraBedFee || 0) : 0;
+  const packageFee = newBooking.isHoneymoon ? 30 : 0;
+  const childrenFee = newBooking.children * 20; // Adjust the 20 to your specific rate
+  
+  // Totals
+  const subtotalPerNight = basePrice + extraBedFee + packageFee + childrenFee;
+  const subtotal = subtotalPerNight * nights;
+  
+  // Discounts
+  const discount = newBooking.isElderly ? subtotal * 0.10 : 0; // 10% discount
+  const totalBill = subtotal - discount;
 
+  // 6. SAVE TO FIREBASE
+  try {
+    const bookingData = {
+      guestName: newBooking.guestName,
+      roomNumber: room.roomNumber,
+      checkInDate: Timestamp.fromDate(checkInDate),
+      checkOutDate: Timestamp.fromDate(checkOutDate),
+      status: 'Active',
+      totalBill: totalBill,
+      accessCode: code,
+      adults: newBooking.adults,
+      children: newBooking.children,
+      isHoneymoon: newBooking.isHoneymoon,
+      isElderly: newBooking.isElderly,
+      hasExtraBed: newBooking.hasExtraBed,
+      packageFee: packageFee,
+      discount: discount
+    };
+
+    // Assuming you have a 'bookings' collection
+    await addDoc(collection(db, 'bookings'), bookingData);
+    alert("Booking successful!");
+    
+    // Optional: Refresh your UI here if needed
+  } catch (error) {
+    console.error("Booking error:", error);
+    alert("Failed to save booking. Please try again.");
+  }
       // Create Setup Tasks
       const tasksToCreate = [];
       tasksToCreate.push({
